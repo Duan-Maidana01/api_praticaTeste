@@ -106,3 +106,6 @@ Para compilar o projeto, executar a suíte completa de testes unitários e de in
 
 ```bash
 ./mvnw clean test
+
+![Relatório de Cobertura JaCoCo]
+(JaCoCo.png)
