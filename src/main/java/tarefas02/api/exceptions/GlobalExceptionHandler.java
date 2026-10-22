@@ -1,127 +1,47 @@
 package tarefas02.api.exceptions;
 
-
-import tarefas02.api.services.exceptions.ObjectNotFoundException;
-import tarefas02.api.services.exceptions.DataBindingViolationException;
-
-
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import tarefas02.api.services.exceptions.AuthorizationException;
+import tarefas02.api.services.exceptions.DataBindingViolationException;
+import tarefas02.api.services.exceptions.ObjectNotFoundException;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
-    @Value("${server.error.include-exception:false}")
-    private boolean printStackTrace;
+public class GlobalExceptionHandler {
 
     @ExceptionHandler(ObjectNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<Object> handleObjectNotFoundException(
-            ObjectNotFoundException objectNotFoundException,
-            WebRequest request) {
-        return buildErrorResponse(
-                objectNotFoundException,
-                objectNotFoundException.getMessage(),
-                HttpStatus.NOT_FOUND,
-                request
-        );
+    public ResponseEntity<ErrorResponse> handleObjectNotFound(ObjectNotFoundException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(DataBindingViolationException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ResponseEntity<Object> handleDataBindingViolationException(
-            DataBindingViolationException dataBindingViolationException,
-            WebRequest request) {
-        return buildErrorResponse(
-                dataBindingViolationException,
-                dataBindingViolationException.getMessage(),
-                HttpStatus.CONFLICT,
-                request
-        );
+    public ResponseEntity<ErrorResponse> handleDataBindingViolation(DataBindingViolationException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ResponseEntity<Object> handleDataIntegrityViolationException(
-            DataIntegrityViolationException dataIntegrityViolationException,
-            WebRequest request) {
-        return buildErrorResponse(
-                dataIntegrityViolationException,
-                "Violação de integridade dos dados no banco.",
-                HttpStatus.CONFLICT,
-                request
-        );
+    @ExceptionHandler(AuthorizationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorization(AuthorizationException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-@ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ResponseEntity<Object> handleConstraintViolationException(
-            ConstraintViolationException constraintViolationException,
-            WebRequest request) {
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.UNPROCESSABLE_ENTITY.value(),
-                "Validation error. Check 'errors' field for details."
-        );
-
-        // Percorre cada erro de validação e extrai o campo e a mensagem limpa
-        for (ConstraintViolation<?> violation : constraintViolationException.getConstraintViolations()) {
-            errorResponse.addValidationError(
-                    violation.getPropertyPath().toString(),
-                    violation.getMessage()
-            );
-        }
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorResponse);
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Acesso negado!");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-
-    /*@ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ResponseEntity<Object> handleConstraintViolationException(
-            ConstraintViolationException constraintViolationException,
-            WebRequest request) {
-        return buildErrorResponse(
-                constraintViolationException,
-                constraintViolationException.getMessage(),
-                HttpStatus.UNPROCESSABLE_ENTITY,
-                request
-        );
-    }*/
-
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<Object> handleAllUncaughtException(
-            Exception exception,
-            WebRequest request) {
-        return buildErrorResponse(
-                exception,
-                "Ocorreu um erro interno no servidor.",
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                request
-        );
-    }
-
-    private ResponseEntity<Object> buildErrorResponse(
-            Exception exception,
-            String message,
-            HttpStatus httpStatus,
-            WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse(httpStatus.value(), message);
-        if (printStackTrace) {
-            errorResponse.setStackTrace(ExceptionUtils.getStackTrace(exception));
-        }
-        return ResponseEntity.status(httpStatus).body(errorResponse);
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Falha na autenticação!");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 }
