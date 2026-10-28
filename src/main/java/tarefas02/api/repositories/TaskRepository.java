@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import tarefas02.api.models.Task;
+import tarefas02.api.models.projections.TaskProjection;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
