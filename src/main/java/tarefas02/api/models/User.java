@@ -1,15 +1,20 @@
 package tarefas02.api.models;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,13 +53,21 @@ public class User {
     @JsonProperty(access = Access.WRITE_ONLY)
     private List<Task> tasks = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @JsonProperty(access = Access.WRITE_ONLY)
+    @CollectionTable(name = "user_profile")
+    @Column(name = "profile", nullable = false)
+    private Set<Integer> profiles = new HashSet<>();
+
     public User() {
+        addProfile(ProfileEnums.USER);
     }
 
     public User(Long id, String username, String password) {
         this.id = id;
         this.username = username;
         this.password = password;
+        addProfile(ProfileEnums.USER);
     }
 
     public Long getId() {
@@ -89,6 +102,14 @@ public class User {
         this.tasks = tasks;
     }
 
+    public Set<ProfileEnums> getProfiles() {
+        return this.profiles.stream().map(x -> ProfileEnums.toEnum(x)).collect(Collectors.toSet());
+    }
+
+    public void addProfile(ProfileEnums profile) {
+        this.profiles.add(profile.getCode());
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -105,11 +126,4 @@ public class User {
     public int hashCode() {
         return Objects.hash(this.id, this.username, this.password);
     }
-
-    public Set<ProfileEnums> getProfiles() {
-
-        return Set.of(ProfileEnums.USER);
-        
-    }
-    
 }
